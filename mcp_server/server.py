@@ -411,9 +411,6 @@ def get_status_options() -> str:
     return output
 
 
-def main():
-    mcp.run()
-
 
 if __name__ == "__main__":
-    main()
+    mcp.run()

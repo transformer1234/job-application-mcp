@@ -48,7 +48,7 @@ python -m job_application_mcp.server
 Or if installed:
 
 ```bash
-job-application-mcp
+job-application-mcp_server
 ```
 
 ### Connecting to Claude Desktop
@@ -64,7 +64,7 @@ Add this configuration to your Claude Desktop config file:
     "job-applications": {
       "command": "python",
       "args": ["-m", "job_application_mcp.server"],
-      "cwd": "/path/to/job-application-mcp"
+      "cwd": "/path/to/job-application-mcp_server"
     }
   }
 }

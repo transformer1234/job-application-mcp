@@ -1,8 +1,8 @@
-from src.job_application_mcp.server import add_application, get_all_applications
+from mcp_server.server import add_application, get_all_applications
 
 # Add a test application
 result = add_application(
-    company="Test Corp",
+    company="Test Corp2",
     role="Software Engineer",
     status="Applied"
 )
