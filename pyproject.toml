@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_backend"
+
+[project]
+name = "job-application-mcp"
+version = "0.1.0"
+description = "MCP server for managing job applications via AI assistants"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=0.1.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+job-application-mcp = "job_application_mcp.server:main"
