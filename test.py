@@ -1,4 +1,4 @@
-from mcp_server.server import add_application, get_all_applications
+from server import add_application, get_all_applications
 
 # Add a test application
 result = add_application(
