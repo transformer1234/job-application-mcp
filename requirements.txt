@@ -2,3 +2,4 @@ fastmcp
 mcp>=1.6.0
 psycopg2-binary
 python-dotenv
+uvicorn
