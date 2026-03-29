@@ -410,7 +410,173 @@ def get_status_options() -> str:
 
     return output
 
+@mcp.tool()
+def get_upcoming_interviews() -> str:
+    """
+    Get all applications with interview-related statuses, sorted by date applied.
 
+    Returns:
+        List of applications with upcoming or recent interviews
+    """
+    try:
+        conn = get_connection()
+        cursor = get_dict_cursor(conn)
+
+        interview_statuses = (
+            "Interview Scheduled",
+            "Phone Screen Scheduled",
+            "Second Interview",
+            "Final Interview",
+        )
+
+        placeholders = ",".join(["%s"] * len(interview_statuses))
+        cursor.execute(f"""
+            SELECT * FROM applications
+            WHERE status IN ({placeholders})
+            ORDER BY date_applied DESC
+        """, interview_statuses)
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        if not rows:
+            return "No upcoming interviews found."
+
+        output = f"Upcoming interviews ({len(rows)}):\n\n"
+        for row in rows:
+            output += f"#{row['id']} - {row['role']} at {row['company']}\n"
+            output += f"   Status: {row['status']}\n"
+            output += f"   Applied: {row['date_applied']}\n"
+            if row['location']:
+                output += f"   Location: {row['location']}\n"
+            if row['notes']:
+                output += f"   Notes: {row['notes']}\n"
+            output += "\n"
+
+        return output
+
+    except Exception as e:
+        return f"✗ Error retrieving interviews: {str(e)}"
+
+
+@mcp.tool()
+def generate_weekly_report() -> str:
+    """
+    Generate a weekly summary report of job application activity.
+
+    Returns:
+        A formatted report covering the last 7 days of activity
+    """
+    try:
+        conn = get_connection()
+        cursor = get_dict_cursor(conn)
+
+        # Applications in last 7 days
+        cursor.execute("""
+            SELECT * FROM applications
+            WHERE date_applied >= (NOW() - INTERVAL '7 days')::DATE::TEXT
+            ORDER BY date_applied DESC
+        """)
+        recent = cursor.fetchall()
+
+        # Total pipeline
+        cursor.execute("SELECT COUNT(*) as total FROM applications")
+        total = cursor.fetchone()['total']
+
+        # Active pipeline (not rejected/withdrawn)
+        cursor.execute("""
+            SELECT COUNT(*) as active FROM applications
+            WHERE status NOT IN ('Rejected', 'Withdrew Application', 'Position Filled', 'No Response')
+        """)
+        active = cursor.fetchone()['active']
+
+        # Interview stage
+        cursor.execute("""
+            SELECT COUNT(*) as interviews FROM applications
+            WHERE status IN (
+                'Phone Screen Scheduled', 'Phone Screen Completed',
+                'Interview Scheduled', 'Interview Completed',
+                'Second Interview', 'Final Interview'
+            )
+        """)
+        interviews = cursor.fetchone()['interviews']
+
+        # Offers
+        cursor.execute("""
+            SELECT COUNT(*) as offers FROM applications
+            WHERE status IN ('Offer Received', 'Offer Accepted')
+        """)
+        offers = cursor.fetchone()['offers']
+
+        conn.close()
+
+        output = "Weekly Job Search Report\n"
+        output += "=" * 30 + "\n\n"
+
+        output += f"Pipeline Summary:\n"
+        output += f"  Total applications:  {total}\n"
+        output += f"  Active pipeline:     {active}\n"
+        output += f"  Interview stage:     {interviews}\n"
+        output += f"  Offers:              {offers}\n\n"
+
+        output += f"Applied This Week ({len(recent)}):\n"
+        if recent:
+            for row in recent:
+                output += f"  • {row['role']} at {row['company']} — {row['status']}\n"
+        else:
+            output += "  No new applications this week.\n"
+
+        conversion = round((interviews / total * 100), 1) if total > 0 else 0
+        output += f"\nApplication → Interview rate: {conversion}%\n"
+
+        return output
+
+    except Exception as e:
+        return f"✗ Error generating report: {str(e)}"
+
+
+@mcp.tool()
+def suggest_follow_up(days_threshold: int = 7) -> str:
+    """
+    Suggest applications that may need a follow-up based on inactivity.
+
+    Args:
+        days_threshold: Number of days without status change to flag (default: 7)
+
+    Returns:
+        List of applications that haven't been updated recently
+    """
+    try:
+        conn = get_connection()
+        cursor = get_dict_cursor(conn)
+
+        cursor.execute(f"""
+            SELECT * FROM applications
+            WHERE status IN ('Applied', 'Under Review')
+            AND date_applied <= (NOW() - INTERVAL '{days_threshold} days')::DATE::TEXT
+            ORDER BY date_applied ASC
+        """)
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        if not rows:
+            return f"No applications need follow-up (threshold: {days_threshold} days)."
+
+        output = f"Applications needing follow-up ({len(rows)}) — no update in {days_threshold}+ days:\n\n"
+        for row in rows:
+            output += f"#{row['id']} - {row['role']} at {row['company']}\n"
+            output += f"   Status: {row['status']}\n"
+            output += f"   Applied: {row['date_applied']}\n"
+            if row['notes']:
+                output += f"   Notes: {row['notes']}\n"
+            output += "\n"
+
+        output += "Tip: Consider sending a follow-up email to these companies."
+        return output
+
+    except Exception as e:
+        return f"✗ Error suggesting follow-ups: {str(e)}"
 
 if __name__ == "__main__":
     mcp.run(transport=os.getenv("TRANSPORT"), host=os.getenv("HOST"), port=int(os.getenv("PORT")))
