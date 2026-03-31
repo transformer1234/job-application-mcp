@@ -51,6 +51,9 @@ Add to `claude_desktop_config.json`:
 | `search_applications` | Filter by company, role, status, date range |
 | `get_statistics` | Status breakdown, trends, top companies |
 | `get_status_options` | List of recommended status values |
+| `get_upcoming_interviews` | List of applications with upcoming or recent interviews |
+| `generate_weekly_report` | Generate a weekly summary report | 
+| `suggest_follow_up` | Suggest applications that may need a follow-up based on inactivity |
 
 ---
 
